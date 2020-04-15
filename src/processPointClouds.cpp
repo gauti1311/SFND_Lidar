@@ -247,17 +247,9 @@ void ProcessPointClouds<PointT>::proximity(int indice,std::vector<std::vector<fl
 	std::vector<int>nearby_points = tree->search(totalPoints[indice],distanceTol);
 	for(int j : nearby_points)
 	{
-		if(processed[j]==false)
-        {
+		if(!processed[j])
 			proximity(j,totalPoints,cluster,processed,tree,distanceTol);
-        } 
-        else
-        {
-            continue;
         }
-           
-	}
-    
 }
 
 template<typename PointT>
