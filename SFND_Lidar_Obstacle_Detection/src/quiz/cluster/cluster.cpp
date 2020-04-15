@@ -7,6 +7,7 @@
 #include <string>
 #include "kdtree.h"
 
+
 // Arguments:
 // window is the region to draw box around
 // increase zoom to see more of the area
@@ -88,10 +89,7 @@ void proximity(int indice,std::vector<std::vector<float>> points,std::vector<int
 		if(!processed[j])
 			proximity(j,points,cluster,processed,tree,distanceTol);	
 	}
-
-
-
-
+	//std::cout<<cluster.size()<<std::endl;
 }
 
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)

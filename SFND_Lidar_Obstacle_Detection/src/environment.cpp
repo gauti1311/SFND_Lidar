@@ -54,7 +54,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
   	ProcessPointClouds<pcl::PointXYZ> pointProcessor;
       
     std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> segmentCloud = pointProcessor.SegmentPlane(inputCloud, 100, 0.2);
-    renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
+    //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
     renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
     std::vector<typename pcl::PointCloud<pcl::PointXYZ>::Ptr> cloudClusters = pointProcessor.Clustering(segmentCloud.first,1.0,3,30);
@@ -83,14 +83,16 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,ProcessPointClouds
 
     Eigen::Vector4f minPoint = Eigen::Vector4f(-10,-6.5,-2,1);
     Eigen::Vector4f maxPoint = Eigen::Vector4f(30, 6.5,1,1);
-    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.4 , minPoint ,maxPoint );
+    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.4 , minPoint, maxPoint);
     //renderPointCloud(viewer,filterCloud,"filterCloud");
-    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane(filterCloud, 100, 0.2);
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->RansacPlane(filterCloud, 100, 0.2);
     
-    renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
+    //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
     renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
-    std::vector<typename pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->Clustering(segmentCloud.first, 0.5, 10, 150);
+    KdTree* tree = new KdTree;
+
+    std::vector<typename pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->EuclideanClustering(segmentCloud.first, tree, 0.5, 10, 150);
     
     int clusterId = 0;
     std::vector<Color> colors = {Color(1,0,0),Color(1,1,0),Color(0,0,1)};

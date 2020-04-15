@@ -1,5 +1,5 @@
 // PCL lib Functions for processing point clouds 
-
+#pragma once
 #ifndef PROCESSPOINTCLOUDS_H_
 #define PROCESSPOINTCLOUDS_H_
 
@@ -18,6 +18,7 @@
 #include <ctime>
 #include <chrono>
 #include "render/box.h"
+#include "kdtree.h"
 
 template<typename PointT>
 class ProcessPointClouds {
@@ -40,6 +41,12 @@ public:
 
     std::vector<typename pcl::PointCloud<PointT>::Ptr> Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize);
 
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> EuclideanClustering(typename pcl::PointCloud<PointT>::Ptr cloud, KdTree* tree, float clusterTolerance, int minSize, int maxSize);
+    
+    std::vector<std::vector<int>> euclidean_cluster(std::vector<std::vector<float>> points,KdTree* tree, float clusterTolerance);
+
+    void proximity(int indice,std::vector<std::vector<float>> totalPoints,std::vector<int>& cluster,std::vector<bool> processed, KdTree* tree,float distanceTol);
+    
     Box BoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster);
 
     void savePcd(typename pcl::PointCloud<PointT>::Ptr cloud, std::string file);

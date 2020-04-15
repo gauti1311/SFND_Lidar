@@ -1,5 +1,4 @@
 // PCL lib Functions for processing point clouds 
-
 #include "processPointClouds.h"
 #include <unordered_set>
 
@@ -19,7 +18,6 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 {
     std::cout << cloud->points.size() << std::endl;
 }
-
 
 template<typename PointT>
 typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
@@ -104,7 +102,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 	while(maxIterations--)
 	{
 		std::unordered_set<int> inliers;
-        //pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
+        
 		while(inliers.size()<3)
 			inliers.insert(rand()%(cloud->points.size()));
 		float x1,y1,z1,x2,y2,z2,x3,y3,z3;
@@ -114,9 +112,12 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 		z1 = cloud->points[*itr].z;
 		
 		itr++ ;
+
 		x2 = cloud->points[*itr].x;
 		y2 = cloud->points[*itr].y;
 		z2 = cloud->points[*itr].z;
+
+      	itr++ ;
 
 		x3 = cloud->points[*itr].x;
 		y3 = cloud->points[*itr].y;
@@ -236,6 +237,88 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     return clusters;
 }
+
+
+template<typename PointT>
+void ProcessPointClouds<PointT>::proximity(int indice,std::vector<std::vector<float>> totalPoints,typename std::vector<int>& cluster,std::vector<bool> processed, KdTree* tree,float distanceTol)
+{
+    processed[indice] = true;
+	cluster.push_back(indice);
+	std::vector<int>nearby_points = tree->search(totalPoints[indice],distanceTol);
+	for(int j : nearby_points)
+	{
+		if(processed[j]==false)
+        {
+			proximity(j,totalPoints,cluster,processed,tree,distanceTol);
+        } 
+        else
+        {
+            continue;
+        }
+           
+	}
+    
+}
+
+template<typename PointT>
+std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclidean_cluster(std::vector<std::vector<float>> points,KdTree* tree, float clusterTolerance)
+{
+    std::vector<std::vector<int>> clusters;
+
+    std::vector<bool> processed(points.size(),false);
+
+	for(int i = 0; i<points.size(); i++)
+	{
+		if(processed[i]==true)
+			continue;
+        std::vector<int> cluster ;
+		proximity(i,points,cluster,processed,tree,clusterTolerance);
+		clusters.push_back(cluster);
+	} 
+    return clusters;
+}    
+
+template<typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::EuclideanClustering(typename pcl::PointCloud<PointT>::Ptr cloud, KdTree* tree, float clusterTolerance, int minSize, int maxSize)
+{
+
+    auto startTime = std::chrono::steady_clock::now();
+    std::vector<std::vector<float>> totalPoints; 
+    totalPoints.reserve(cloud->points.size());
+
+    for(int it = 0; it!=cloud->points.size(); ++it)
+    {
+        std::vector<float> thdPoint{cloud->points[it].x,cloud->points[it].y,cloud->points[it].z};
+        tree->insert(thdPoint,it);
+        totalPoints.push_back(thdPoint);
+    }
+
+    std::vector<std::vector<int>> clusters = euclidean_cluster(totalPoints,tree,clusterTolerance);
+
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> resclusters;
+    for (int i = 0; i != clusters.size(); ++i)
+    {
+        typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
+
+        for (int j = 0; j!= clusters.size(); ++j)
+        {
+            if(clusters[i].size()< minSize || clusters[i].size()> maxSize )
+                continue;
+
+            cloud_cluster->points.push_back (cloud->points[clusters[i][j]]); 
+        }
+        cloud_cluster->width = cloud_cluster->points.size();
+        cloud_cluster->height = 1;
+        cloud_cluster->is_dense = true;
+
+        resclusters.push_back(cloud_cluster);
+    }
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << resclusters.size() << " clusters" << std::endl;
+    return resclusters;
+}
+
 
 
 template<typename PointT>

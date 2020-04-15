@@ -90,6 +90,7 @@ std::unordered_set<int> RansacPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, i
 		x2 = cloud->points[*itr].x;
 		y2 = cloud->points[*itr].y;
 		z2 = cloud->points[*itr].z;
+		itr++ ;
 
 		x3 = cloud->points[*itr].x;
 		y3 = cloud->points[*itr].y;
