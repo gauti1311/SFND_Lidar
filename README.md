@@ -1,4 +1,5 @@
-# Sensor Fusion Self-Driving Car Course
+# Sensor Fusion Self-Driving Car Course 
+# Project 1. Lidar Obstacle Detection
 
 <img src="media/ObstacleDetectionFPS.gif" width="700" height="400" />
 
