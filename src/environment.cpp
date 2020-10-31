@@ -45,16 +45,16 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     bool renderScene = true;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
-    // TODO:: Create lidar sensor 
+    // Done:: Create lidar sensor 
 	Lidar* lidar = new Lidar(cars,0);
   	pcl::PointCloud<pcl::PointXYZ>::Ptr inputCloud = lidar->scan();
   	//renderRays(viewer, lidar->position, inputCloud);
     //renderPointCloud(viewer,inputCloud,"inputCloud");
-    // TODO:: Create point processor
+    // DOne:: Create point processor
   	ProcessPointClouds<pcl::PointXYZ> pointProcessor;
       
     std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> segmentCloud = pointProcessor.SegmentPlane(inputCloud, 100, 0.2);
-    //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
+    renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
     renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
     std::vector<typename pcl::PointCloud<pcl::PointXYZ>::Ptr> cloudClusters = pointProcessor.Clustering(segmentCloud.first,1.0,3,30);
@@ -76,23 +76,27 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 
 void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,ProcessPointClouds<pcl::PointXYZI>* pointProcessorI, const pcl::PointCloud<pcl::PointXYZI>::Ptr& inputCloud)
 
-//void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
-    
-    //renderPointCloud(viewer,inputCloud,"inputCloud");
+    // FilterCloud
+    float filterRes = 0.4;
+    auto minPoint = Eigen::Vector4f(-10,-6.5,-2,1);
+    auto maxPoint = Eigen::Vector4f(30, 6.5,1,1);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud = pointProcessorI->FilterCloud(inputCloud, filterRes , minPoint, maxPoint);
 
-    Eigen::Vector4f minPoint = Eigen::Vector4f(-10,-6.5,-2,1);
-    Eigen::Vector4f maxPoint = Eigen::Vector4f(30, 6.5,1,1);
-    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.4 , minPoint, maxPoint);
-    //renderPointCloud(viewer,filterCloud,"filterCloud");
-    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->RansacPlane(filterCloud, 100, 0.2);
+    //Segment Plane
+    int maxIterations = 40;
+    float distanceThreshold = 0.3;
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->RansacPlane(filterCloud, maxIterations, distanceThreshold);
     
     //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0)); 
     renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
+    // clustering
     KdTree* tree = new KdTree;
-
-    std::vector<typename pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->EuclideanClustering(segmentCloud.first, tree, 0.5, 10, 150);
+    float clusterTolerance = 0.5;
+    int minsize = 10;
+    int maxsize = 140;
+    std::vector<typename pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->EuclideanClustering(segmentCloud.first, clusterTolerance, minsize,maxsize);
     
     int clusterId = 0;
     std::vector<Color> colors = {Color(1,0,0),Color(1,1,0),Color(0,0,1)};
